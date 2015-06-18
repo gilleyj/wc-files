@@ -14,7 +14,7 @@
      Text Domain: wc_files
      */
     
-    if ( ! class_exists( 'wc_files' ) ) :
+    if ( ! class_exists( 'wc_files_class' ) ) :
     
     class wc_files_class {
         
