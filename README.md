@@ -2,7 +2,10 @@
 A small plugin to add file sharing/download with short codes and administration handling
 
 ## Installation
-Copy these files to your wordpress/wp-content/plugins/wc-files directory.  Activate the plugin in your wordpress admin console.
+
+Choose "Download ZIP" on the right hand column here, then go to your wordpress installation's admin - plugins page and upload this zip file.  Then activate the plugin in your wordpress admin console.
+
+A new admin menu option will appear on the left hand side of your wordpress dash named "WC Files".
 
 ## Shortcodes
 
