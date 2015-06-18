@@ -1,0 +1,34 @@
+ul.wc-files-list {
+    font-size: 90%;
+}
+
+li.wc-file-li {
+    padding-bottom: 4px;
+}
+
+a.wc-file-a {
+    font-weight: 500;
+}
+
+span.wc-file-excerpt {
+    font-size: 85%;
+    display: block;
+}
+
+span.wc-file-type {
+    font-size: 60%;
+    font-weight: 100;
+    font-style: italic;
+    padding-left: 6px;
+    vertical-align: middle;
+}
+
+a.wc-file-edit-link {
+    font-weight: bold;
+    font-size: 75%;
+    text-decoration: none;
+    vertical-align: middle;
+    border: none !important;
+    padding: 0px 8px;
+}
+
