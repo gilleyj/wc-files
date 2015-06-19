@@ -13,7 +13,7 @@
      Plugin URI: https://github.com/gilleyj/wc-files
      Description: Adds a file post type with admin and shortcodes
      Author: Joelle Gilley
-     Version: 0.0.5
+     Version: 0.0.6
      Author URI: http://whamcat.com/
      License: GNU General Public License
      Text Domain: wc_files
@@ -46,7 +46,7 @@
         Private $_custom_field_name = 'wc_file_attachment_media_id';
         
         /**
-         * Loads default options
+         * Our class constructor
          *
          * @return void
          */
@@ -74,97 +74,6 @@
             
             // Registers and enqueues the required javascript.
             
-        }
-        
-        function wc_files_meta_script_enqueue() {
-            global $typenow;
-            if( $typenow == $this->_posttype ) {
-                // tell wordpress we're going to use the media box
-                wp_enqueue_media();
-                
-                // Registers and enqueues the required javascript.
-                wp_register_script( 'wc_files_meta_box', plugins_url('wc-files.js', __FILE__), array( 'jquery' ) );
-                wp_localize_script( 'wc_files_meta_box', 'wc_file_meta_image',
-                                   array(
-                                         'title' => 'Choose or Upload a File',
-                                         'button' => 'Use this file',
-                                         )
-                                   );
-
-                wp_enqueue_script( 'wc_files_meta_box' );
-            }
-        }
-
-        /**
-         * Prevents Attachment ID from being displayed on front end
-         * @since 1.0.3
-         * @param string $content the post content
-         * @return string either the original content or none
-         */
-        function wc_files_the_content_filter( $content ) {
-            
-            if ( !$this->wc_files_verify_post_type( ) )
-                return $content;
-            
-            //allow password prompt to display
-            if ( post_password_required() )
-                return $content;
-            
-            $html = '';
-            $attachment_id = intval(get_post_meta( get_the_ID(), $this->_custom_field_name, true));
-            if($attachment_id>0) {
-                $attachment = $this->wc_file_get_attachment( $attachment_id );
-                $html .= $attachment->thumbnail;
-                $html .= '<p class="title"><strong>'.$attachment->filename.'</strong> ('.$attachment->post_mime_type.')</p>';
-                $html .= '<p class="info"><strong><a href="'.$attachment->uri_relative.'" target="_blank" download="'.$attachment->filename.'">'.__('Download').'</a></strong></p>';
-            } else {
-                $html .= '<p class="title">'.__('There is no attachment to display.').'</p>';
-            }
-            
-            return $html;
-            
-        }
-        
-        /**
-         * Checks if a given post is a document
-         * note: We can't use the screen API because A) used on front end, and B) admin_init is too early (enqueue scripts)
-         * @param object|int either a post object or a postID
-         * @since 0.5
-         * @param unknown $post (optional)
-         * @return bool true if document, false if not
-         */
-        function wc_files_verify_post_type( $post = false ) {
-            
-            //check for post_type query arg (post new)
-            if ( $post == false && isset( $_GET['post_type'] ) && $_GET['post_type'] == $this->_posttype )
-                return true;
-            
-            //if post isn't set, try get vars (edit post)
-            if ( $post == false )
-                $post = ( isset( $_GET['post'] ) ) ? $_GET['post'] : false;
-            
-            //look for post_id via post or get (media upload)
-            if ( $post == false )
-                $post = ( isset( $_REQUEST['post_id'] ) ) ? $_REQUEST['post_id'] : false;
-            
-            
-            $post_type = get_post_type( $post );
-            
-            //if post is really an attachment or revision, look to the post's parent
-            if ( $post_type == $this->_posttype )
-                $post_type = get_post_type( get_post( $post )->post_parent );
-            
-            return $post_type == $this->_posttype;
-            
-        }
-        
-        /**
-         * adds the ecoding type to handle a file upload to the admin form
-         *
-         * @access public
-         */
-        function wc_files_update_edit_form() {
-            echo ' enctype="multipart/form-data"';
         }
         
         /**
@@ -245,6 +154,41 @@
                          );
             
         }
+
+        /**
+         * Function to enqueue the scripts required for our meta box
+         *
+         * @access public
+         */
+        function wc_files_meta_script_enqueue() {
+            global $typenow;
+            if( $typenow == $this->_posttype ) {
+                // tell wordpress we're going to use the media box
+                wp_enqueue_media();
+                
+                // Registers and enqueues the required javascript.
+                wp_register_script( 'wc_files_meta_box', plugins_url('wc-files.js', __FILE__), array( 'jquery' ) );
+                wp_localize_script( 'wc_files_meta_box', 'wc_file_meta_image',
+                                   array(
+                                         'title' => 'Choose or Upload a File',
+                                         'button' => 'Use this file',
+                                         )
+                                   );
+
+                wp_enqueue_script( 'wc_files_meta_box' );
+            }
+        }
+
+        
+        /**
+         * adds the ecoding type to handle a file upload to the admin form
+         *
+         * @access public
+         */
+        function wc_files_update_edit_form() {
+            echo ' enctype="multipart/form-data"';
+        }
+        
         
         /**
          * Get the attachment with some extras
@@ -273,6 +217,11 @@
             return $attachment;
         }
         
+        /**
+         * Function to get a thumbnail url for either an image or an attachment/mime
+         *
+         * @access public
+         */
         function wc_file_get_thumbnail($attachment_id) {
             if( $image = wp_get_attachment_thumb_url( $attachment_id ) )
                 return $image;
@@ -383,7 +332,69 @@
                 return $documents;
             } else return $output;
         }
+
+        /**
+         * Checks if a given post is a document
+         * note: We can't use the screen API because A) used on front end, and B) admin_init is too early (enqueue scripts)
+         * @param object|int either a post object or a postID
+         * @since 0.5
+         * @param unknown $post (optional)
+         * @return bool true if document, false if not
+         */
+        function wc_files_verify_post_type( $post = false ) {
+            
+            //check for post_type query arg (post new)
+            if ( $post == false && isset( $_GET['post_type'] ) && $_GET['post_type'] == $this->_posttype )
+                return true;
+            
+            //if post isn't set, try get vars (edit post)
+            if ( $post == false )
+                $post = ( isset( $_GET['post'] ) ) ? $_GET['post'] : false;
+            
+            //look for post_id via post or get (media upload)
+            if ( $post == false )
+                $post = ( isset( $_REQUEST['post_id'] ) ) ? $_REQUEST['post_id'] : false;
+            
+            
+            $post_type = get_post_type( $post );
+            
+            //if post is really an attachment or revision, look to the post's parent
+            if ( $post_type == $this->_posttype )
+                $post_type = get_post_type( get_post( $post )->post_parent );
+            
+            return $post_type == $this->_posttype;
+            
+        }
         
+        /**
+         * Our content filter
+         *
+         * @access public
+         */
+        function wc_files_the_content_filter( $content ) {
+            
+            if ( !$this->wc_files_verify_post_type( ) )
+                return $content;
+            
+            //allow password prompt to display
+            if ( post_password_required() )
+                return $content;
+            
+            $html = '';
+            $attachment_id = intval(get_post_meta( get_the_ID(), $this->_custom_field_name, true));
+            if($attachment_id>0) {
+                $attachment = $this->wc_file_get_attachment( $attachment_id );
+                $html .= $attachment->thumbnail;
+                $html .= '<p class="title"><strong>'.$attachment->filename.'</strong> ('.$attachment->post_mime_type.')</p>';
+                $html .= '<p class="info"><strong><a href="'.$attachment->uri_relative.'" target="_blank" download="'.$attachment->filename.'">'.__('Download').'</a></strong></p>';
+            } else {
+                $html .= '<p class="title">'.__('There is no attachment to display.').'</p>';
+            }
+            
+            return $html;
+            
+        }
+
         /**
          * Process the shortcodes
          * @access public
