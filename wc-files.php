@@ -38,7 +38,6 @@
          */
         Private $_custom_field_name = 'wc_file_attachment_media_id';
         
-        
         /**
          * Loads default options
          *
@@ -49,33 +48,55 @@
             add_action( 'init', array( $this, 'wc_files_init' ) );
             
             // add upload metainfo to the admin form
-            add_action( 'post_edit_form_tag', array( $this, 'update_edit_form' ) );
+            add_action( 'post_edit_form_tag', array( $this, 'wc_files_update_edit_form' ) );
             
             // action to take when saving the post with a file
-            add_action( 'save_post', array( $this, 'save_custom_meta_data' ) );
+            add_action( 'save_post', array( $this, 'wc_files_save_custom_meta_data' ) );
             
             // adding a content filter to display this arrangement
-            add_filter( 'the_content', array( &$this, 'content_filter' ), 1 );
+            add_filter( 'the_content', array( &$this, 'wc_files_the_content_filter' ), 1 );
             
             // add filtering for the shortcodes
-            add_shortcode( 'wc-files', array( &$this, 'documents_shortcode' ) );
+            add_shortcode( 'wc-files', array( &$this, 'wc_files_shortcode' ) );
             
-            
+            // add our stylesheet
             wp_register_style( 'myPluginStylesheet', plugins_url('stylesheet.css', __FILE__) );
             wp_enqueue_style( 'myPluginStylesheet' );
-
+            
+            add_action( 'admin_enqueue_scripts', array( &$this, 'wc_files_meta_script_enqueue' ) );
+            
+            // Registers and enqueues the required javascript.
+            
         }
         
-        
+        function wc_files_meta_script_enqueue() {
+            global $typenow;
+            if( $typenow == $this->_posttype ) {
+                // tell wordpress we're going to use the media box
+                wp_enqueue_media();
+                
+                // Registers and enqueues the required javascript.
+                wp_register_script( 'wc_files_meta_box', plugins_url('wc-files.js', __FILE__), array( 'jquery' ) );
+                wp_localize_script( 'wc_files_meta_box', 'wc_file_meta_image',
+                                   array(
+                                         'title' => 'Choose or Upload a File',
+                                         'button' => 'Use this file',
+                                         )
+                                   );
+
+                wp_enqueue_script( 'wc_files_meta_box' );
+            }
+        }
+
         /**
          * Prevents Attachment ID from being displayed on front end
          * @since 1.0.3
          * @param string $content the post content
          * @return string either the original content or none
          */
-        function content_filter( $content ) {
+        function wc_files_the_content_filter( $content ) {
             
-            if ( !$this->verify_post_type( ) )
+            if ( !$this->wc_files_verify_post_type( ) )
                 return $content;
             
             //allow password prompt to display
@@ -105,7 +126,7 @@
          * @param unknown $post (optional)
          * @return bool true if document, false if not
          */
-        function verify_post_type( $post = false ) {
+        function wc_files_verify_post_type( $post = false ) {
             
             //check for post_type query arg (post new)
             if ( $post == false && isset( $_GET['post_type'] ) && $_GET['post_type'] == $this->_posttype )
@@ -135,7 +156,7 @@
          *
          * @access public
          */
-        function update_edit_form() {
+        function wc_files_update_edit_form() {
             echo ' enctype="multipart/form-data"';
         }
         
@@ -227,21 +248,32 @@
             
             $attachment = get_post( $attachment_id );
             
-            $url_realtive = parse_url( $attachment->guid );
-            $attachment->uri_relative = $url_realtive['path'];
+            
+            $url_reltive = parse_url( $attachment->guid );
+            $attachment->uri_relative = $url_reltive['path'];
             $attachment->filepath = get_attached_file( $attachment->ID );
             $attachment->filename = basename( $attachment->filepath );
-            
+            $attachment->thumbnail_file = $this->wc_file_get_thumbnail( $attachment->ID );
+            /*
             $attachment->thumbnail = wp_get_attachment_image(
                                                              $attachment->ID,
                                                              array(64,64),
                                                              true,
                                                              array('class' => 'attachment-64x64 alignright')
                                                              );
+             */
             
             return $attachment;
         }
         
+        function wc_file_get_thumbnail($attachment_id) {
+            if( $image = wp_get_attachment_thumb_url( $attachment_id ) )
+                return $image;
+            if( $image = wp_mime_type_icon( $attachment_id ) )
+                return $image;
+            return false;
+        }
+
         /**
          * Draws the meta box for our post type
          *
@@ -256,25 +288,40 @@
             $attachment_id = intval(get_post_meta( get_the_ID(), $this->_custom_field_name, true));
             if($attachment_id>0) {
                 $attachment = $this->wc_file_get_attachment( $attachment_id );
-                $html .= $attachment->thumbnail;
-                $html .= '<p class="title"><strong>'.$attachment->filename.'</strong> ('.$attachment->post_mime_type.')</p>';
+                $img_src = $attachment->thumbnail_file;
+                $filename = $attachment->filename;
+                $mimetype = '('.$attachment->post_mime_type.')';
+            } else {
+                $img_src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+                $filename = 'No file currently attached.';
+                $mimetype = '';
             }
             
-            $html .= '<p class="description">';
-            $html .= 'Upload a new file here:';
+            // image area template
+            $html .= '<div class="wc_files_admin_div">';
+            $html .= '<img id="wc_files_thumbnail" height="64" src="'.$img_src.'" class="attachment-64x64 alignright" alt="attached file thumbnail">';
+            $html .= '<p class="title"><strong>';
+            $html .= '<span id="wc_files_filename">'.$filename.'</span></strong> ';
+            $html .= '<span id="wc_files_mimetype">'.$mimetype.'</span></p>';
+            $html .= '</div>';
+            
+            $html .= '<p>';
+            $html .= '<label for="wc_files_attach_button" class="screen-reader-text">Upload a new file</label>';
+            $html .= '<input type="button" id="wc_files_attach_button" class="button" value="Choose or Upload a File" />';
+            // $html .= '<input type="file" id="wc_files_upload" name="wc_files_upload" value="" />';
+            $html .= '<input type="hidden" name="wc_files_attachment_id" id="wc_files_attachment_id" value="'.$attachment_id.'" />';
             $html .= '</p>';
-            $html .= '<input type="file" id="wc_files_upload" name="wc_files_upload" value="" size="25" />';
+            $html .= '<div class="clear"></div>';
             
             echo $html;
         }
-        
         
         /**
          * Saves and uploads the file
          *
          * @access public
          */
-        function save_custom_meta_data($id) {
+        function wc_files_save_custom_meta_data($id) {
             
             /* --- security verification --- */
             if(!wp_verify_nonce($_POST[$this->_nonce], plugin_basename(__FILE__))) {
@@ -296,53 +343,45 @@
             } // end if
             /* - end security verification - */
             
-            // Make sure the file array isn't empty
-            if(!empty($_FILES['wc_files_upload']['name'])) {
-                
-                // Get the file type of the upload
-                $arr_file_type = wp_check_filetype(basename($_FILES['wc_files_upload']['name']));
-                $uploaded_type = $arr_file_type['type'];
-                
-                // Check if the type is supported. If not, throw an error.
-                // if(in_array($uploaded_type, $supported_types)) {
-                
-                // Use the WordPress API to upload the file
-                $attachment_id = media_handle_upload( 'wc_files_upload', $_POST['post_id'] );
-                if ( is_wp_error( $attachment_id ) ) {
-                    wp_die('There was an error uploading your file. The error is: ' . $upload['error']);
-                } else {
-                    add_post_meta($id, $this->_custom_field_name, $attachment_id, true) or
-                    update_post_meta($id, $this->_custom_field_name, $attachment_id);
-                } // end if/else
-                
-            } // end if
-            
-        } // end save_custom_meta_data
+            $new_attachment_id = intval($_POST['wc_files_attachment_id']);
+            if($new_attachment_id>0) {
+                add_post_meta($id, $this->_custom_field_name, $new_attachment_id, true) or
+                update_post_meta($id, $this->_custom_field_name, $new_attachment_id);
+            } else {
+                delete_post_meta($id, $this->_custom_field_name);
+            }
+                        
+        } // end wc_files_save_custom_meta_data
         
-        function my_get_documents( $args = array(), $return_attachments = false ) {
+        /**
+         * Gets the posts and attachments
+         *
+         * @access public
+         */
+        function wc_files_get_documents( $args = array(), $return_attachments = true ) {
             $args = (array) $args;
             $args['post_type'] = $this->_posttype;
             $documents = get_posts( $args );
             $output = array_filter( $documents );
             
-            $documents = array();
-            foreach ( $output as $document ) {
-                $attachment_id = intval(get_post_meta( $document->ID, $this->_custom_field_name, true));
-                if($attachment_id>0) $attachment = $this->wc_file_get_attachment($attachment_id);
-                else $attachment = false;
-                $document->attachment = $attachment;
-                $documents[] = $document;
-            }
-            
-            return $documents;
+            if($return_attachments) {
+                $documents = array();
+                foreach ( $output as $document ) {
+                    $attachment_id = intval(get_post_meta( $document->ID, $this->_custom_field_name, true));
+                    if($attachment_id>0) $attachment = $this->wc_file_get_attachment($attachment_id);
+                    else $attachment = false;
+                    $document->attachment = $attachment;
+                    $documents[] = $document;
+                }
+                return $documents;
+            } else return $output;
         }
-        
         
         /**
          * Process the shortcodes
          * @access public
          */
-        function documents_shortcode( $atts ) {
+        function wc_files_shortcode( $atts ) {
             
             $defaults = array(
                               'orderby' => 'modified',
@@ -369,7 +408,7 @@
             $atts = array_filter( $atts );
             
             // get the lists
-            $documents = $this->my_get_documents( $atts );
+            $documents = $this->wc_files_get_documents( $atts );
             
             // build up html and return that
             $html = '';
@@ -379,7 +418,7 @@
                 
                 if($document->attachment != false) {
                     $html .= '<li class="wc-file-li wc_file-'.$document->attachment->ID.'">';
-                    $html .= '<a class="wc-file-a" href="'.$document->attachment->uri_relative.'" target="_blank">';
+                    $html .= '<a class="wc-file-a" href="'.$document->attachment->uri_relative.'" target="_blank"download>';
                     $html .= '<span class="wc-file-title">'.get_the_title( $document->ID ).'</span>';
                     // $html .= '<span class="wc-file-name">'.$document->attachment->filename.'</span> ';
                     $html .= '<span class="wc-file-type">('.$document->attachment->post_mime_type.')</span>';
@@ -405,5 +444,4 @@
     $wc_files_object = new wc_files_class();
     
     endif;
-    
     
