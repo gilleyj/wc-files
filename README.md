@@ -1,5 +1,5 @@
 # wc-files
-A small plugin to add file sharing/download with short codes and administration handling
+A small simple wordpress plugin to add a "file" post type with associated administrative panels and integration with wordpress via shortcodes.
 
 ## Installation
 
