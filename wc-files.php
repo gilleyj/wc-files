@@ -1,14 +1,14 @@
 <?php
     /**
      * @package wc_files
-     * @version 1.1
+     * @version 0.02
      */
     /*
      Plugin Name: Wordpress File Sharing Tool
      Plugin URI: https://github.com/gilleyj/wc-files
      Description: Adds a file post type with admin and shortcodes
      Author: Joelle Gilley
-     Version: 1.1
+     Version: 0.02
      Author URI: http://whamcat.com/
      License: GNU General Public License
      Text Domain: wc_files
@@ -109,7 +109,7 @@
                 $attachment = $this->wc_file_get_attachment( $attachment_id );
                 $html .= $attachment->thumbnail;
                 $html .= '<p class="title"><strong>'.$attachment->filename.'</strong> ('.$attachment->post_mime_type.')</p>';
-                $html .= '<p class="info"><strong><a href="'.$attachment->uri_relative.'" target="_blank" download>'.__('Download').'</a></strong></p>';
+                $html .= '<p class="info"><strong><a href="'.$attachment->uri_relative.'" target="_blank" download="'.$attachment->filename.'">'.__('Download').'</a></strong></p>';
             } else {
                 $html .= '<p class="title">'.__('There is no attachment to display.').'</p>';
             }
@@ -418,7 +418,7 @@
                 
                 if($document->attachment != false) {
                     $html .= '<li class="wc-file-li wc_file-'.$document->attachment->ID.'">';
-                    $html .= '<a class="wc-file-a" href="'.$document->attachment->uri_relative.'" target="_blank" download>';
+                    $html .= '<a class="wc-file-a" href="'.$document->attachment->uri_relative.'" target="_blank" download="'.$document->attachment->filename.'">';
                     $html .= '<span class="wc-file-title">'.get_the_title( $document->ID ).'</span>';
                     // $html .= '<span class="wc-file-name">'.$document->attachment->filename.'</span> ';
                     $html .= '<span class="wc-file-type">('.$document->attachment->post_mime_type.')</span>';
