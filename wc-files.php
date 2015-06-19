@@ -1,14 +1,14 @@
 <?php
     /**
      * @package wc_files
-     * @version 1.0
+     * @version 1.1
      */
     /*
      Plugin Name: Wordpress File Sharing Tool
      Plugin URI: https://github.com/gilleyj/wc-files
      Description: Adds a file post type with admin and shortcodes
      Author: Joelle Gilley
-     Version: 1.0
+     Version: 1.1
      Author URI: http://whamcat.com/
      License: GNU General Public License
      Text Domain: wc_files
