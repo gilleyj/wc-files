@@ -4,7 +4,7 @@
      Plugin URI: https://github.com/gilleyj/wc-files
      Description: Adds a file post type with admin and shortcodes
      Author: Joelle Gilley
-     Version: 0.0.7
+     Version: 0.0.8
      Author URI: http://whamcat.com/
      License: GNU General Public License
      Text Domain: wc_files
