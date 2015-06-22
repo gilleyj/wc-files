@@ -4,7 +4,7 @@
      Plugin URI: https://github.com/gilleyj/wc-files
      Description: Adds a file post type with admin and shortcodes
      Author: Joelle Gilley
-     Version: 0.0.8
+     Version: 0.0.9
      Author URI: http://whamcat.com/
      License: GNU General Public License
      Text Domain: wc_files
@@ -438,7 +438,7 @@
                     $html .= '<a class="wc-file-a" href="'.$document->attachment->uri_relative.'" target="_blank" download="'.$document->attachment->filename.'">';
                     $html .= '<span class="wc-file-title">'.get_the_title( $document->ID ).'</span>';
                     // $html .= '<span class="wc-file-name">'.$document->attachment->filename.'</span> ';
-                    $html .= '<span class="wc-file-type">('.$document->attachment->post_mime_type.')</span>';
+                    // $html .= '<span class="wc-file-type">('.$document->attachment->post_mime_type.')</span>';
                     $html .= '</a>';
                     if(current_user_can('edit_posts')) {
                         $html .= '<a class="wc-file-edit-link" href="'.get_edit_post_link( $document->ID ).'">edit</a>';
